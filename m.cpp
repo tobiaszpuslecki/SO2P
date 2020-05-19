@@ -13,7 +13,7 @@
 using namespace std;
 
 Stopwatch stopwatch;
-float time_=0.0;
+float time_ = 0.0;
 int NUM_THREADS = 0;
 int a = 0;
 int e = 0;
@@ -29,92 +29,102 @@ pthread_mutex_t oMutex;
 pthread_mutex_t uMutex;
 pthread_mutex_t yMutex;
 
-
-
-
 bool running = true;
 
 void refreshScreen()
 {
-    while(running == true)
-    {
-        clear();
+  while (running == true)
+  {
+    clear();
 
-        // <code>
+    // <code>
 
-        printw( "NUM_THREADS: %d\n", NUM_THREADS );
-        printw( "A/a: %d\n", a );
-        printw( "E/e: %d\n", e );
-        printw( "I/i: %d\n", i );
-        printw( "O/o: %d\n", o );
-        printw( "U/u: %d\n", u );
-        printw( "Y/y: %d\n", y );
-        time_+=0.01;
-        printw( "Time: %.2f\n", time_);
+    printw("NUM_THREADS: %d\n", NUM_THREADS);
+    printw("A/a: %d\n", a);
+    printw("E/e: %d\n", e);
+    printw("I/i: %d\n", i);
+    printw("O/o: %d\n", o);
+    printw("U/u: %d\n", u);
+    printw("Y/y: %d\n", y);
+    time_ += 0.01;
+    printw("Time: %.2f\n", time_);
 
-        //</code>
+    //</code>
 
-        refresh();
-        // Refresh every 0.1 s
-        usleep(10000);
-    }
+    refresh();
+    // Refresh every 0.1 s
+    usleep(10000);
+  }
 }
 
+void *vowelCount(void *args)
+{
+  ifstream inFile;
+  string *p = (string *)args;
+  string file = *p;
+  delete p;
+  inFile.open(file.c_str());
 
+  if (!inFile.is_open())
+  {
+    cout << "Unable to open " << file << endl;
+    exit(1);
+  }
 
-void * vowelCount(void *args) {
-    ifstream inFile;
-    string *p = (string *)args;
-    string file = *p;
-    delete p;
-    inFile.open(file.c_str());
-
-    if (!inFile){
-      cout << "Unable to open " << file << endl;
-      exit(1);
-    }
-    char vowel;
-    while (inFile >> std::skipws >> vowel){
-    	if (vowel == 'a' || vowel == 'A')
+  char vowel;
+  while (inFile >> vowel)
+  {
+    switch ((char)std::tolower(vowel))
+    {
+      case 'a':
       {
         pthread_mutex_lock(&aMutex);
         a++;
         pthread_mutex_unlock(&aMutex);
+        break;
       }
-    	else if (vowel == 'e' || vowel == 'E')
+      case 'e':
       {
         pthread_mutex_lock(&eMutex);
-    	  e++;
+        e++;
         pthread_mutex_unlock(&eMutex);
+        break;
       }
-      else if (vowel == 'i' || vowel == 'I')
+      case 'i':
       {
         pthread_mutex_lock(&iMutex);
         i++;
         pthread_mutex_unlock(&iMutex);
+        break;
       }
-      else if (vowel == 'o' || vowel == 'O')
+      case 'o':
       {
         pthread_mutex_lock(&oMutex);
         o++;
         pthread_mutex_unlock(&oMutex);
+        break;
       }
-      else if (vowel == 'u' || vowel == 'U')
+      case 'u':
       {
         pthread_mutex_lock(&uMutex);
         u++;
         pthread_mutex_unlock(&uMutex);
+        break;
       }
-      else if (vowel == 'y' || vowel == 'Y')
+      case 'y':
       {
         pthread_mutex_lock(&yMutex);
         y++;
         pthread_mutex_unlock(&yMutex);
+        break;
       }
+      default:
+        break;
     }
+  }
 
-    inFile.close();
-    pthread_exit(NULL);
+  inFile.close();
+  pthread_exit(NULL);
 }
 
 int main()
@@ -122,7 +132,7 @@ int main()
   stopwatch.start();
 
   NUM_THREADS = getTXTFilesNumber();
-  pthread_t* thread = new pthread_t[NUM_THREADS];
+  pthread_t *thread = new pthread_t[NUM_THREADS];
 
   stringstream fileName;
   string *str_p = new string;
@@ -133,8 +143,6 @@ int main()
   pthread_mutex_init(&uMutex, 0);
   pthread_mutex_init(&yMutex, 0);
 
-
-
   // Initialize ncurses
   initscr();
   curs_set(0);
@@ -142,34 +150,32 @@ int main()
   // Start monitor
   std::thread monitor(refreshScreen);
 
-
-
   for (int n = 0; n < NUM_THREADS; n++)
   {
     fileName << n + 1 << ".txt";
 
     str_p = new string(fileName.str());
-  	if(pthread_create(&thread[n], NULL, vowelCount,
-  					  (void *)str_p)){
-  	  cout << "Error with thread creation" << endl;
-  	  return -1;
-  	}
-  	fileName.str("");
-  	fileName.clear();
+    if (pthread_create(&thread[n], NULL, vowelCount,
+                       (void *)str_p))
+    {
+      cout << "Error with thread creation" << endl;
+      return -1;
+    }
+    fileName.str("");
+    fileName.clear();
   }
 
+  for (int n = 0; n < NUM_THREADS; n++)
+  {
 
-  for (int n = 0; n < NUM_THREADS; n++){
-
-  	if(pthread_join(thread[n], NULL)){
-  	  cout << "Error joining thread" << endl;
-  	  return -1;
-  	}
-
+    if (pthread_join(thread[n], NULL))
+    {
+      cout << "Error joining thread" << endl;
+      return -1;
+    }
   }
 
   running = false;
-
 
   pthread_mutex_destroy(&aMutex);
   pthread_mutex_destroy(&eMutex);
@@ -177,8 +183,6 @@ int main()
   pthread_mutex_destroy(&oMutex);
   pthread_mutex_destroy(&uMutex);
   pthread_mutex_destroy(&yMutex);
-
-
 
   // Stop monitor
   sleep(1);
@@ -201,8 +205,4 @@ int main()
   //cout << "Time: " << stopwatch.read() << endl;
 
   return 0;
-
-
-
-
 }
