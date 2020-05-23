@@ -1,4 +1,4 @@
 app.o:	*.cpp
-	g++ -o app.o *.cpp -lncurses -pthread
+	g++ -std=c++17 -o app.o *.cpp -lncurses -pthread
 
 
